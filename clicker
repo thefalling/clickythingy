@@ -1,0 +1,164 @@
+from PIL import ImageGrab
+from win32 import win32gui
+import win32api, win32con
+import time
+
+MANA_PERCENTAGE = 0.30
+HP_PERCENTAGE = 0.75
+STAM_PERCENTAGE = 0.30
+
+MANA_HOTKEY = 0x33
+HP_HOTKEY = 0x32
+STAM_HOTKEY = 0x31
+
+INV_STAM = (232, 1251)
+INV_HP = (253, 1251)
+INV_MANA = (276, 1251)
+
+BUFF_PA = (2, 95, 190)
+BUFF_COMP = (253, 255, 179)
+BUFF_TS = (130, 194, 164)
+BUFF_SS = (0, 105, 125)
+BUFF_MS = (0, 106, 77)
+
+BUFFS = {win32con.VK_F2: BUFF_PA, win32con.VK_F3: BUFF_COMP, win32con.VK_F4: BUFF_TS, win32con.VK_F5: BUFF_SS, win32con.VK_F6: BUFF_MS}
+
+def get_stamina_bar():
+    return ImageGrab.grab(bbox=(307, 1318, 308, 1394))
+
+def get_health_bar():
+    return ImageGrab.grab(bbox=(327, 1300, 328, 1394))
+
+def get_mana_bar():
+    return ImageGrab.grab(bbox=(472, 1300, 473, 1394))
+
+def compare_colors(x, y, variance):
+    r1, g1, b1 = x
+    r2, g2, b2 = y
+    return abs(r1 - r2) < variance and abs(g1 - g2) < variance and abs(b1 - b2) < variance
+
+def get_buffs():
+    y = 50
+    first_buff_x = 25
+    next_buff_x = 32
+    buff_bar_image = ImageGrab.grab(bbox=(0, y-1, 500, y+2))
+    existing_buffs = []
+    for i in range(1, 9):
+        current_color = buff_bar_image.getpixel(((first_buff_x + next_buff_x * i), 1))
+        for hotkey, color in BUFFS.items():
+            if compare_colors(color, current_color, 5):
+                existing_buffs.append(hotkey)
+                break
+    return existing_buffs
+
+def get_stamina_percentage():
+    stamina_bar = get_stamina_bar()
+    green_threshold = 240
+    stamina_bar_height = stamina_bar.height
+    for i in range(0, stamina_bar_height):
+        r, g, b = stamina_bar.getpixel((0, i))
+        if g >= green_threshold:
+            return (stamina_bar_height - i) / stamina_bar_height
+    return 0
+
+def get_mana_percentage():
+    mana_bar = get_mana_bar()
+    blue_threshold = 240
+    mana_bar_height = mana_bar.height
+    for i in range(0, mana_bar_height):
+        r, g, b = mana_bar.getpixel((0, i))
+        if b >= blue_threshold:
+            return (mana_bar_height - i) / mana_bar_height
+    return 0
+
+def get_health_percentage():
+    health_bar = get_health_bar()
+    red_threshold = 240
+    health_bar_height = health_bar.height
+    for i in range(0, health_bar_height):
+        r, g, b = health_bar.getpixel((0, i))
+        if r >= red_threshold:
+             return (health_bar_height - i) / health_bar_height
+    return 0
+
+def click(x,y):
+    win32api.SetCursorPos((x,y))
+    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,x,y,0,0)
+    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,x,y,0,0)
+
+def right_click(x,y):
+    win32api.SetCursorPos((x,y))
+    win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN,x,y,0,0)
+    win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP,x,y,0,0)
+
+def keyboard(key):
+    win32api.keybd_event(key, 0, 0, 0)
+    time.sleep(.05)
+    win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
+
+def shift_keyboard(key):
+    win32api.keybd_event(win32con.VK_LSHIFT, 0, 0, 0)
+    keyboard(key)
+    win32api.keybd_event(win32con.VK_LSHIFT, 0, win32con.KEYEVENTF_KEYUP, 0)
+
+def get_scroll_lock_state():
+    import ctypes
+    hllDll = ctypes.WinDLL("User32.dll")
+    return hllDll.GetKeyState(win32con.VK_SCROLL)
+
+i = 0
+while True:
+    if get_scroll_lock_state():
+        stam = get_stamina_percentage()
+        hp = get_health_percentage()
+        mana = get_mana_percentage()
+        print(stam, hp, mana)
+
+        if(mana < MANA_PERCENTAGE):
+            keyboard(MANA_HOTKEY)
+            time.sleep(0.05)
+
+        if(hp < HP_PERCENTAGE):
+            keyboard(HP_HOTKEY)
+            time.sleep(0.05)
+
+        if (stam < STAM_PERCENTAGE):
+            keyboard(STAM_HOTKEY)
+            time.sleep(0.05)
+
+        used_buffs = get_buffs()
+        for hotkey, color in BUFFS.items():
+            found_buff = False
+            for used_buff in used_buffs:
+                if used_buff == hotkey:
+                    found_buff = True
+                    break
+            if not found_buff:
+                keyboard(hotkey)
+                right_click(1291, 685)
+                time.sleep(0.5)
+                break
+
+        if i % 35 == 0:
+            keyboard(win32con.VK_F3)
+            right_click(1291, 685)
+            time.sleep(0.5)
+
+        if i % 200 == 0:
+            win32api.SetCursorPos(INV_HP)
+            shift_keyboard(HP_HOTKEY)
+
+        if i % 150 == 0:
+            win32api.SetCursorPos(INV_STAM)
+            shift_keyboard(STAM_HOTKEY)
+
+        if i % 125 == 0:
+            win32api.SetCursorPos(INV_MANA)
+            shift_keyboard(MANA_HOTKEY)
+
+
+        click(1291, 685)
+
+        i = i + 1
+
+    time.sleep(0.2)
