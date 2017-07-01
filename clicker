@@ -1,6 +1,6 @@
 from PIL import ImageGrab
-from win32 import win32gui
-import win32api, win32con
+import win32api
+import win32con
 import time
 
 MANA_PERCENTAGE = 0.30
@@ -21,21 +21,34 @@ BUFF_TS = (130, 194, 164)
 BUFF_SS = (0, 105, 125)
 BUFF_MS = (0, 106, 77)
 
-BUFFS = {win32con.VK_F2: BUFF_PA, win32con.VK_F3: BUFF_COMP, win32con.VK_F4: BUFF_TS, win32con.VK_F5: BUFF_SS, win32con.VK_F6: BUFF_MS}
+BUFF_PA_HOTKEY = win32con.VK_F2
+BUFF_COMP_HOTKEY = win32con.VK_F3
+BUFF_TS_HOTKEY = win32con.VK_F4
+BUFF_SS_HOTKEY = win32con.VK_F5
+BUFF_MS_HOTKEY = win32con.VK_F6
+
+BUFFS = {BUFF_PA_HOTKEY: BUFF_PA, BUFF_COMP_HOTKEY: BUFF_COMP, BUFF_TS_HOTKEY: BUFF_TS, BUFF_SS_HOTKEY: BUFF_SS, BUFF_MS_HOTKEY: BUFF_MS}
+
+AUTO_CLICK_LOCATION = (960, 550)
+AUTO_CLICK = True
 
 def get_stamina_bar():
-    return ImageGrab.grab(bbox=(307, 1318, 308, 1394))
+    return ImageGrab.grab(bbox=(307, 958, 308, 1034))
+
 
 def get_health_bar():
-    return ImageGrab.grab(bbox=(327, 1300, 328, 1394))
+    return ImageGrab.grab(bbox=(327, 940, 328, 1033))
+
 
 def get_mana_bar():
-    return ImageGrab.grab(bbox=(472, 1300, 473, 1394))
+    return ImageGrab.grab(bbox=(472, 940, 473, 1033))
+
 
 def compare_colors(x, y, variance):
     r1, g1, b1 = x
     r2, g2, b2 = y
     return abs(r1 - r2) < variance and abs(g1 - g2) < variance and abs(b1 - b2) < variance
+
 
 def get_buffs():
     y = 50
@@ -51,6 +64,7 @@ def get_buffs():
                 break
     return existing_buffs
 
+
 def get_stamina_percentage():
     stamina_bar = get_stamina_bar()
     green_threshold = 240
@@ -60,6 +74,7 @@ def get_stamina_percentage():
         if g >= green_threshold:
             return (stamina_bar_height - i) / stamina_bar_height
     return 0
+
 
 def get_mana_percentage():
     mana_bar = get_mana_bar()
@@ -71,6 +86,7 @@ def get_mana_percentage():
             return (mana_bar_height - i) / mana_bar_height
     return 0
 
+
 def get_health_percentage():
     health_bar = get_health_bar()
     red_threshold = 240
@@ -81,10 +97,12 @@ def get_health_percentage():
              return (health_bar_height - i) / health_bar_height
     return 0
 
+
 def click(x,y):
     win32api.SetCursorPos((x,y))
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,x,y,0,0)
     win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,x,y,0,0)
+
 
 def right_click(x,y):
     win32api.SetCursorPos((x,y))
@@ -96,10 +114,12 @@ def keyboard(key):
     time.sleep(.05)
     win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
 
+
 def shift_keyboard(key):
     win32api.keybd_event(win32con.VK_LSHIFT, 0, 0, 0)
     keyboard(key)
     win32api.keybd_event(win32con.VK_LSHIFT, 0, win32con.KEYEVENTF_KEYUP, 0)
+
 
 def get_scroll_lock_state():
     import ctypes
@@ -114,15 +134,15 @@ while True:
         mana = get_mana_percentage()
         print(stam, hp, mana)
 
-        if(mana < MANA_PERCENTAGE):
+        if mana < MANA_PERCENTAGE:
             keyboard(MANA_HOTKEY)
             time.sleep(0.05)
 
-        if(hp < HP_PERCENTAGE):
+        if hp < HP_PERCENTAGE:
             keyboard(HP_HOTKEY)
             time.sleep(0.05)
 
-        if (stam < STAM_PERCENTAGE):
+        if stam < STAM_PERCENTAGE:
             keyboard(STAM_HOTKEY)
             time.sleep(0.05)
 
@@ -135,29 +155,18 @@ while True:
                     break
             if not found_buff:
                 keyboard(hotkey)
-                right_click(1291, 685)
+                right_click(*AUTO_CLICK_LOCATION)
                 time.sleep(0.5)
                 break
 
+        # Try Comp every 30 iterations
         if i % 35 == 0:
-            keyboard(win32con.VK_F3)
-            right_click(1291, 685)
+            keyboard(BUFF_COMP_HOTKEY)
+            right_click(*(AUTO_CLICK_LOCATION))
             time.sleep(0.5)
 
-        if i % 200 == 0:
-            win32api.SetCursorPos(INV_HP)
-            shift_keyboard(HP_HOTKEY)
-
-        if i % 150 == 0:
-            win32api.SetCursorPos(INV_STAM)
-            shift_keyboard(STAM_HOTKEY)
-
-        if i % 125 == 0:
-            win32api.SetCursorPos(INV_MANA)
-            shift_keyboard(MANA_HOTKEY)
-
-
-        click(1291, 685)
+        if AUTO_CLICK:
+            click(*AUTO_CLICK_LOCATION)
 
         i = i + 1
 
