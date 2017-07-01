@@ -3,24 +3,29 @@ import win32api
 import win32con
 import time
 
+# Update these to what % you want to pot
 MANA_PERCENTAGE = 0.30
 HP_PERCENTAGE = 0.75
 STAM_PERCENTAGE = 0.30
 
+# Hotkey for your pots, 0x31 = 1, 0x32 = 2, 0x33 = 3
 MANA_HOTKEY = 0x33
 HP_HOTKEY = 0x32
 STAM_HOTKEY = 0x31
 
-INV_STAM = (232, 1251)
-INV_HP = (253, 1251)
-INV_MANA = (276, 1251)
+# Where you want the clicker to click, usually the middle of the screen, but you can twiddle with it a bit
+AUTO_CLICK_LOCATION = (960, 550)
+# Auto left click?
+AUTO_CLICK = True
 
+# Buff pixels to determine if buff is active
 BUFF_PA = (2, 95, 190)
 BUFF_COMP = (253, 255, 179)
 BUFF_TS = (130, 194, 164)
 BUFF_SS = (0, 105, 125)
 BUFF_MS = (0, 106, 77)
 
+# Buff hotkeys, just change VK_FX to the hotkey associated with the buff
 BUFF_PA_HOTKEY = win32con.VK_F2
 BUFF_COMP_HOTKEY = win32con.VK_F3
 BUFF_TS_HOTKEY = win32con.VK_F4
@@ -29,8 +34,6 @@ BUFF_MS_HOTKEY = win32con.VK_F6
 
 BUFFS = {BUFF_PA_HOTKEY: BUFF_PA, BUFF_COMP_HOTKEY: BUFF_COMP, BUFF_TS_HOTKEY: BUFF_TS, BUFF_SS_HOTKEY: BUFF_SS, BUFF_MS_HOTKEY: BUFF_MS}
 
-AUTO_CLICK_LOCATION = (960, 550)
-AUTO_CLICK = True
 
 def get_stamina_bar():
     return ImageGrab.grab(bbox=(307, 958, 308, 1034))
